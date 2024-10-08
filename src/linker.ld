@@ -3,7 +3,7 @@ ENTRY(_start)
 MEMORY
 {
     FLASH_I (rwx) : ORIGIN = 0x42000000, LENGTH = 7M   /* Memory-mapped flash address */
-    SRAM_I  (rwx) : ORIGIN = 0x40380100, LENGTH = 32K /* Internal RAM */
+    SRAM_I  (rwx) : ORIGIN = 0x40380100, LENGTH = 64K /* Internal RAM */
     SRAM_D  (rw) : ORIGIN = 0x3FC80000 + LENGTH(SRAM_I), LENGTH = 32K /* Internal RAM */
 }
 
