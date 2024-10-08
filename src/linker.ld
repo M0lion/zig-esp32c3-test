@@ -3,7 +3,7 @@ ENTRY(_start)
 MEMORY
 {
     FLASH_I (rwx) : ORIGIN = 0x42000000, LENGTH = 7M   /* Memory-mapped flash address */
-    SRAM_I  (rwx) : ORIGIN = 0x40380100, LENGTH = 64K /* Internal RAM */
+    SRAM_I  (rwx) : ORIGIN = 0x40380100, LENGTH = 252K /* Internal RAM */
     SRAM_D  (rw) : ORIGIN = 0x3FC80000 + LENGTH(SRAM_I), LENGTH = 32K /* Internal RAM */
 }
 
@@ -23,6 +23,8 @@ SECTIONS
         _data_end = .;
     } > SRAM_D AT > FLASH_I
 
+		_data_load_start = LOADADDR(.data);
+
     .bss :
     {
         _bss_start = .;
@@ -38,6 +40,3 @@ SECTIONS
         _stack_end = .;
     } > SRAM_D
 }
-
-PROVIDE(_stack_top = _stack_end);
-PROVIDE(_stack_bottom = _stack_start);

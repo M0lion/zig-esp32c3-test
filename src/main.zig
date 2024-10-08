@@ -121,7 +121,29 @@ pub fn configureUart0Gpio() void {
     IO_MUX.GPIO21.FUN_DRV = 2;
 }
 
-export fn _start() void {
+const sections = struct {
+    extern var _data_start: u8;
+    extern var _data_end: u8;
+    extern var _data_load_start: u8;
+    extern var _bss_start: u8;
+    extern var _bss_end: u8;
+};
+
+fn meminit() void {
+    const bss_start: [*]u8 = @ptrCast(&sections._bss_start);
+    const bss_end: [*]u8 = @ptrCast(&sections._bss_end);
+    const bss_len = @intFromPtr(bss_end) - @intFromPtr(bss_start);
+    @memset(bss_start[0..bss_len], 0);
+
+    const data_start: [*]u8 = @ptrCast(&sections._data_start);
+    const data_end: [*]u8 = @ptrCast(&sections._data_end);
+    const data_len = @intFromPtr(data_end) - @intFromPtr(data_start);
+    const data_load: [*]u8 = @ptrCast(&sections._data_load_start);
+    @memcpy(data_start[0..data_len], data_load[0..data_len]);
+}
+
+export fn _start() callconv(.C) noreturn {
+    meminit();
     //Enable TMG0
     //peripherals.TIMG0.T0CONFIG.EN = 1;
 
@@ -135,6 +157,27 @@ export fn _start() void {
     //peripherals.RTC_CNTL.OPTIONS0.SW_SYS_RST = 1;
     //}
     while (peripherals.UART0.STATUS.TXFIFO_CNT > 0) {}
+
+    peripherals.INTERRUPT_CORE0.CPU_INT_ENABLE.CPU_INT_ENABLE = 0;
+
+    const led = peripherals.GPIO.PIN8;
+    const led_mux = peripherals.IO_MUX.GPIO8;
+
+    led_mux.SLP_SEL = 1;
+    led_mux.FUN_WPD = 0;
+    led_mux.FUN_WPU = 0;
+    led_mux.FUN_DRV = 3;
+    led_mux.FILTER_EN = 0;
+    led_mux.FUN_IE = 0;
+    led_mux.MCU_SEL = 1;
+    peripherals.GPIO.FUNC8_OUT_SEL_CFG.OUT_SEL = 0x80;
+    peripherals.GPIO.FUNC8_OUT_SEL_CFG.OEN_SEL = 1;
+    peripherals.GPIO.FUNC8_OUT_SEL_CFG.INV_SEL = 0;
+    peripherals.GPIO.FUNC8_OUT_SEL_CFG.OEN_INV_SEL = 0;
+    led.PAD_DRIVER = 0;
+    peripherals.GPIO.ENABLE_W1TC.ENABLE_W1TC = 1 << 8;
+
+    peripherals.GPIO.OUT_W1TC.OUT_W1TC = 1 << 8;
 
     //configureUart0Gpio();
     //initUart0();
