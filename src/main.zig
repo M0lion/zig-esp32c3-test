@@ -127,6 +127,7 @@ const sections = struct {
     extern var _data_load_start: u8;
     extern var _bss_start: u8;
     extern var _bss_end: u8;
+    extern var _global_ponter: u8;
 };
 
 fn meminit() void {
@@ -142,7 +143,17 @@ fn meminit() void {
     @memcpy(data_start[0..data_len], data_load[0..data_len]);
 }
 
-export fn _start() callconv(.C) noreturn {
+export fn _start() linksection("_flash_start") callconv(.C) noreturn {
+    asm volatile (
+        \\.option push
+        \\.option norelax
+        \\la gp, __global_pointer$
+        \\.option pop
+    );
+    asm volatile ("mv sp, %[eos]"
+        :
+        : [eos] "r" (0x3fc7ffff),
+    );
     meminit();
     //Enable TMG0
     //peripherals.TIMG0.T0CONFIG.EN = 1;
@@ -158,46 +169,16 @@ export fn _start() callconv(.C) noreturn {
     //}
     while (peripherals.UART0.STATUS.TXFIFO_CNT > 0) {}
 
-    peripherals.INTERRUPT_CORE0.CPU_INT_ENABLE.CPU_INT_ENABLE = 0;
-
-    const led = peripherals.GPIO.PIN8;
-    const led_mux = peripherals.IO_MUX.GPIO8;
-
-    led_mux.SLP_SEL = 1;
-    led_mux.FUN_WPD = 0;
-    led_mux.FUN_WPU = 0;
-    led_mux.FUN_DRV = 3;
-    led_mux.FILTER_EN = 0;
-    led_mux.FUN_IE = 0;
-    led_mux.MCU_SEL = 1;
-    peripherals.GPIO.FUNC8_OUT_SEL_CFG.OUT_SEL = 0x80;
-    peripherals.GPIO.FUNC8_OUT_SEL_CFG.OEN_SEL = 1;
-    peripherals.GPIO.FUNC8_OUT_SEL_CFG.INV_SEL = 0;
-    peripherals.GPIO.FUNC8_OUT_SEL_CFG.OEN_INV_SEL = 0;
-    led.PAD_DRIVER = 0;
-    peripherals.GPIO.ENABLE_W1TC.ENABLE_W1TC = 1 << 8;
-
-    peripherals.GPIO.OUT_W1TC.OUT_W1TC = 1 << 8;
-
-    //configureUart0Gpio();
-    //initUart0();
-    //configUart0();
-
     const buffer = "Hello esp32";
 
     for (buffer) |char| {
-        while (peripherals.UART0.STATUS.TXFIFO_CNT > 8) {}
+        //while (peripherals.UART0.STATUS.TXFIFO_CNT > 8) {}
         peripherals.UART0.FIFO.RXFIFO_RD_BYTE = char;
     }
 
-    //var i: u32 = 0;
-    //while (i < 1000000) : (i += 1) {
-    //    feed();
-    //    asm volatile ("nop");
-    //}
-
     while (true) {
         if (peripherals.UART0.STATUS.TXFIFO_CNT > 0) {
+            peripherals.UART0.FIFO.RXFIFO_RD_BYTE = sections._bss_end;
             peripherals.RTC_CNTL.OPTIONS0.SW_SYS_RST = 1;
         }
         feed();

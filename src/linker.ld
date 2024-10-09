@@ -2,41 +2,42 @@ ENTRY(_start)
 
 MEMORY
 {
-    FLASH_I (rwx) : ORIGIN = 0x42000000, LENGTH = 7M   /* Memory-mapped flash address */
-    SRAM_I  (rwx) : ORIGIN = 0x40380100, LENGTH = 252K /* Internal RAM */
-    SRAM_D  (rw) : ORIGIN = 0x3FC80000 + LENGTH(SRAM_I), LENGTH = 32K /* Internal RAM */
+    flash (rwx) : ORIGIN = 0x42000000, LENGTH = 4M   /* Memory-mapped flash address */
+    ram  (rw) : ORIGIN = 0x3FC80000, LENGTH = 384K /* Internal RAM */
 }
 
 SECTIONS
 {
+		.header :
+		{
+		    LONG(0xaedb041d)
+		    LONG(0xaedb041d)
+		} > flash
+
     .text : 
     {
-				*(.init)
+				KEEP(*(_flash_start))
+				_start = .;
         *(.text*)
-        *(.rodata*)
-    } > SRAM_I
+    } > flash
 
     .data : 
     {
         _data_start = .;
+        *(.sdata*)
         *(.data*)
+        *(.rodata*)
         _data_end = .;
-    } > SRAM_D AT > FLASH_I
+    } > ram AT > flash
 
 		_data_load_start = LOADADDR(.data);
 
-    .bss :
+    .bss (NOLOAD) :
     {
         _bss_start = .;
         *(.bss*)
         _bss_end = .;
-    } > SRAM_D
-		
-		.stack (NOLOAD) :
-    {
-        _stack_start = .;
-        . = ALIGN(16);          /* Align stack on 16-byte boundary */
-        . += 16K;               /* Define stack size (e.g., 16KB) */
-        _stack_end = .;
-    } > SRAM_D
+    } > ram
+
+		PROVIDE(__global_pointer$ = _data_start + 0x800);
 }
