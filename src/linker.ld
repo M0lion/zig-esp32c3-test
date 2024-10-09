@@ -25,7 +25,7 @@ SECTIONS
 
 		_data_load_start = LOADADDR(.data);
 
-    .bss :
+    .bss (NOLOAD) :
     {
         _bss_start = .;
         *(.bss*)
