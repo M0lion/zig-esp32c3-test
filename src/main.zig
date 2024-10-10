@@ -54,6 +54,8 @@ export fn _start() linksection("_flash_start") callconv(.C) noreturn {
 }
 
 fn main() noreturn {
+    peripherals.INTERRUPT_CORE0.CPU_INT_ENABLE.CPU_INT_ENABLE = 0;
+
     // ROM Bootloader writes to UART and I can see it on my machine, so we verify that TXFIFO_CNT has stuff to write still
     if (peripherals.UART0.STATUS.TXFIFO_CNT > 0) {
         //peripherals.RTC_CNTL.OPTIONS0.SW_SYS_RST = 1; // This resets chip if it's left in, proving that TXFIFI_CNT has stuff in it. It is reset before writing all the normal startup stuff
