@@ -6,8 +6,11 @@ pub fn build(b: *std.Build) void {
             .cpu_arch = .riscv32,
             .cpu_model = .{ .explicit = &std.Target.riscv.cpu.generic_rv32 },
             .os_tag = .freestanding,
-            .abi = .none,
-            .cpu_features_add = std.Target.riscv.featureSet(&.{ .m, .c, .zifencei, .zicsr }),
+            .abi = .eabi,
+            .cpu_features_add = std.Target.riscv.featureSet(&.{
+                std.Target.riscv.Feature.c,
+                std.Target.riscv.Feature.m,
+            }),
         },
     });
 
@@ -19,6 +22,7 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+    exe.addAssemblyFile(b.path("src/startup.S"));
     exe.setLinkerScriptPath(b.path("src/linker.ld"));
     b.installArtifact(exe);
 

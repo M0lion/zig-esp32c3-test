@@ -40,4 +40,5 @@ SECTIONS
     } > ram
 
 		PROVIDE(__global_pointer$ = _data_start + 0x800);
+		PROVIDE(_sp = 0x3fcdffff);
 }
